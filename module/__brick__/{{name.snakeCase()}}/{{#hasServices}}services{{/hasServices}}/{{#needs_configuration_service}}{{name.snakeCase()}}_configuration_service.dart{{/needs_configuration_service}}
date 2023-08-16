@@ -1,0 +1,40 @@
+import 'package:lumen_client_core/lumen_client_core.dart';
+import 'package:shared_services/shared_services.dart';
+
+class {{configurationModelName.pascalCase()}} {
+//TODO fill configuration model
+}
+
+class {{name.pascalCase()}}ConfigurationService with ClassLogger {
+  final ConfigurationCache<{{configurationModelName.pascalCase()}}> _cache;
+  final ConfigurationService _configurationService;
+
+  {{name.pascalCase()}}ConfigurationService({
+    required ConfigurationService configurationService,
+    required ConfigurationCache<{{configurationModelName.pascalCase()}}> cache,
+  })  : _configurationService = configurationService,
+        _cache = cache {
+    _applyDefaultConfiguration();
+    _configurationService.stream.listen((_) => _onConfigurationChange());
+  }
+
+  {{configurationModelName.pascalCase()}} get configuration => _cache.get();
+
+  void _onConfigurationChange() {
+    try {
+      _cache.set(_parseConfiguration());
+    } catch (e, st) {
+      logger.warning('Failed to parse logging configuration.', e, st);
+    }
+  }
+
+  void _applyDefaultConfiguration() {
+    //TODO build configuration from ConfigItem's default values
+    _cache.set({{configurationModelName.pascalCase()}}());
+  }
+
+  //TODO build configuration from _configurationService.getWithConfigItem
+  {{configurationModelName.pascalCase()}} _parseConfiguration() => {{configurationModelName.pascalCase()}}();
+
+  Stream<{{configurationModelName.pascalCase()}}> get stream => _cache.stream;
+}

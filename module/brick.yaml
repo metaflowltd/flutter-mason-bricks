@@ -1,0 +1,47 @@
+name: module
+description: Brick that will generate typical v2 module for you. Enjoy!
+
+version: 0.1.0+1
+
+environment:
+  mason: ">=0.1.0-dev.50 <0.1.0"
+
+vars:
+  name:
+    type: string
+    description: Module name
+    default: module
+    prompt: What is the name of your module?
+  contains_routes:
+    type: boolean
+    description: If true - generates empty routes list
+    default: true
+    prompt: Will your module include routes?
+  level:
+    type: enum
+    description: Controls when your module will be initialized.
+    default: 2
+    prompt: What is your module level? "1" - will be initialized during system splash screen, "2" - after login
+    values:
+      - "1"
+      - "2"
+  continue_on_exception:
+    type: boolean
+    description: If false - exception during init will lead to startup error
+    default: true
+    prompt: Can your module tolerate exception during init?
+  allow_reinit:
+    type: boolean
+    description: If true - init can be called multiple times
+    default: false
+    prompt: Can your module tolerate initialization multiple times, for example after reset?
+  has_repository:
+    type: boolean
+    description: If true - generates repository stub
+    default: true
+    prompt: Do your module need repository?
+  needs_configuration_service:
+    type: boolean
+    description: If true - generates empty configuration service
+    default: true
+    prompt: Do your module need configuration service?
