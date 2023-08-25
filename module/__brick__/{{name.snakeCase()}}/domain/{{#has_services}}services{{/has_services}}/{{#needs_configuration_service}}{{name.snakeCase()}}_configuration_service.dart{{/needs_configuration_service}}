@@ -1,0 +1,36 @@
+import 'package:flutter/foundation.dart';
+import 'package:lumen_client_core/lumen_client_core.dart';
+import 'package:shared_services/shared_services.dart';
+
+class {{configuration_model_name.pascalCase()}} {
+//TODO fill configuration model
+}
+
+class {{name.pascalCase()}}ConfigurationService with ClassLogger {
+  // TODO Replace with StateWrapper if there's no need to listen to the state changes.
+  final ReactiveStateWrapper<{{configuration_model_name.pascalCase()}}> _state;
+  final ConfigurationService _configurationService;
+
+  {{name.pascalCase()}}ConfigurationService({
+    required ConfigurationService configurationService,
+    @visibleForTesting ReactiveStateWrapper<{{configuration_model_name.pascalCase()}}>? stateWrapper,
+  })  : _configurationService = configurationService,
+        _state = stateWrapper ?? ReactiveStateWrapper.seeded({{configuration_model_name.pascalCase()}}()) {
+    _configurationService.stream.listen((_) => _onConfigurationChange());
+  }
+
+  {{configuration_model_name.pascalCase()}} get configuration => _state.get();
+
+  void _onConfigurationChange() {
+    try {
+      _state.set(_parseConfiguration());
+    } catch (e, st) {
+      logger.warning('Failed to parse logging configuration.', e, st);
+    }
+  }
+
+  //TODO build configuration from _configurationService.getWithConfigItem
+  {{configuration_model_name.pascalCase()}} _parseConfiguration() => {{configuration_model_name.pascalCase()}}();
+
+  Stream<{{configuration_model_name.pascalCase()}}> get stream => _state.stream;
+}

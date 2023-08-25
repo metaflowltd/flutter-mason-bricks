@@ -17,11 +17,11 @@ class {{name.pascalCase()}}State extends Equatable {
 
 class {{name.pascalCase()}}Bloc extends Bloc<{{name.pascalCase()}}Event, {{name.pascalCase()}}State> {
   {{name.pascalCase()}}Bloc() : super(const {{name.pascalCase()}}State()) {
-    //TODO event example
-    // on<{{name.pascalCase()}}Event>(
-    //   (event, emit) async {
-    //
-    //   },
-    // );
+  //TODO event example
+  // on<{{name.pascalCase()}}Event>(
+  //   (event, emit) async {
+  //
+  //   },
+  // );
   }
 }
