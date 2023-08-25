@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lumen_client_core/lumen_client_core.dart';
 import 'package:{{{fullPath}}}/routes/{{metadata_file_name}}';
-import 'package:{{{fullPath}}}/blocs/{{name.snakeCase()}}_bloc.dart';
-import 'package:{{{fullPath}}}/widgets/screens/{{name.snakeCase()}}_screen.dart';
+import 'package:{{{fullPath}}}/ui/screens/{{name.snakeCase()}}/{{name.snakeCase()}}_bloc.dart';
+import 'package:{{{fullPath}}}/ui/screens/{{name.snakeCase()}}/{{name.snakeCase()}}_screen.dart';
 
 class {{name.pascalCase()}}Route extends LumenScreenRoute {
   const {{name.pascalCase()}}Route();

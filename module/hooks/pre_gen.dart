@@ -10,25 +10,75 @@ Future run(HookContext context) async {
   final directory = Directory.current.path;
   try {
     final (packageName, modulePath) = await helper.retrievePaths();
+    final generateDefaultStructure = context.vars['generate_default_structure'];
 
-    final needsConfigurationService = context.vars['needs_configuration_service'];
-    final hasServices = context.vars['has_repository'] || needsConfigurationService;
-
+    final bool hasUi, hasRoutes, hasEntities, hasServices, hasRepository, hasSources, needsConfigurationService;
     final String? configurationModelName;
-    if (needsConfigurationService) {
-      configurationModelName = context.logger.prompt(
-        'Pick name for configuration model class',
-        defaultValue: "${context.vars['name'].toString().pascalCase}Configuration",
-      );
+    if (generateDefaultStructure) {
+      hasUi = true;
+      hasRoutes = true;
+      hasEntities = true;
+      hasServices = true;
+      hasRepository = true;
+      hasSources = true;
+      needsConfigurationService = true;
+      configurationModelName = "${context.vars['name'].toString().pascalCase}Configuration";
     } else {
-      configurationModelName = null;
+      hasUi = context.logger.confirm(
+        'Does your module have UI?',
+        defaultValue: true,
+      );
+      hasRoutes = context.logger.confirm(
+        'Does your module have routes? (You can generate routes using \'mason make route\' later)',
+        defaultValue: true,
+      );
+      hasEntities = context.logger.confirm(
+        'Does your module have custom entities?',
+        defaultValue: true,
+      );
+      hasServices = context.logger.confirm(
+        'Does your module have services?',
+        defaultValue: true,
+      );
+      hasRepository = context.logger.confirm(
+        'Does your module have repositories?',
+        defaultValue: true,
+      );
+      hasSources = context.logger.confirm(
+        'Does your module have specific dedicated data sources?',
+        defaultValue: true,
+      );
+      if (hasServices) {
+        needsConfigurationService = context.logger.confirm(
+          'Does your module need a configuration service?',
+          defaultValue: true,
+        );
+      } else {
+        needsConfigurationService = false;
+      }
+      if (needsConfigurationService) {
+        configurationModelName = context.logger.prompt(
+          'Pick name for configuration model class',
+          defaultValue: "${context.vars['name'].toString().pascalCase}Configuration",
+        );
+      } else {
+        configurationModelName = null;
+      }
     }
 
     context.vars = {
       ...context.vars,
       'fullPath': ('$packageName/$modulePath').replaceAll('//', '/'),
-      'hasServices': hasServices,
-      'configurationModelName': configurationModelName,
+      ...{
+        'has_ui': hasUi,
+        'has_routes': hasRoutes,
+        'has_entities': hasEntities,
+        'has_services': hasServices,
+        'has_repository': hasRepository,
+        'has_sources': hasSources,
+        'needs_configuration_service': needsConfigurationService,
+        'configuration_model_name': configurationModelName,
+      },
     };
   } on RangeError catch (_) {
     logger.alert(red.wrap('Could not find lib folder in $directory'));
