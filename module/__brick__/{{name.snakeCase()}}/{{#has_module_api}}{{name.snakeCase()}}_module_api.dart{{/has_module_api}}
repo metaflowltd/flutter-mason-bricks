@@ -1,0 +1,9 @@
+import 'package:lumen_client_core/lumen_client_core.dart';
+
+/// TODO: Auto-generated stub. Update accordingly.
+abstract interface class {{name.pascalCase()}}ModuleApi implements ModuleApi {
+  factory {{name.pascalCase()}}ModuleApi() => _{{name.pascalCase()}}ModuleApi();
+}
+
+class _{{name.pascalCase()}}ModuleApi implements {{name.pascalCase()}}ModuleApi {
+}

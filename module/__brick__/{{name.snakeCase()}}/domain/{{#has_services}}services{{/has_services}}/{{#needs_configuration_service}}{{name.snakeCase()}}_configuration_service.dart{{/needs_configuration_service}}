@@ -9,14 +9,14 @@ class {{configuration_model_name.pascalCase()}} {
 class {{name.pascalCase()}}ConfigurationService with ClassLogger {
   // TODO Replace with StateWrapper if there's no need to listen to the state changes.
   final ReactiveStateWrapper<{{configuration_model_name.pascalCase()}}> _state;
-  final ConfigurationService _configurationService;
+  final ConfigurationManager _configurationManager;
 
   {{name.pascalCase()}}ConfigurationService({
-    required ConfigurationService configurationService,
+    required ConfigurationManager configurationManager,
     @visibleForTesting ReactiveStateWrapper<{{configuration_model_name.pascalCase()}}>? stateWrapper,
-  })  : _configurationService = configurationService,
+  })  : _configurationManager = configurationManager,
         _state = stateWrapper ?? ReactiveStateWrapper.seeded({{configuration_model_name.pascalCase()}}()) {
-    _configurationService.stream.listen((_) => _onConfigurationChange());
+    _configurationManager.stream.listen((_) => _onConfigurationChange());
   }
 
   {{configuration_model_name.pascalCase()}} get configuration => _state.get();
@@ -29,7 +29,7 @@ class {{name.pascalCase()}}ConfigurationService with ClassLogger {
     }
   }
 
-  //TODO build configuration from _configurationService.getWithConfigItem
+  //TODO build configuration from _configurationManager.getWithConfigItem
   {{configuration_model_name.pascalCase()}} _parseConfiguration() => {{configuration_model_name.pascalCase()}}();
 
   Stream<{{configuration_model_name.pascalCase()}}> get stream => _state.stream;

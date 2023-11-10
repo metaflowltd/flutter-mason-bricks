@@ -12,7 +12,16 @@ Future run(HookContext context) async {
     final (packageName, modulePath) = await helper.retrievePaths();
     final generateDefaultStructure = context.vars['generate_default_structure'];
 
-    final bool hasUi, hasRoutes, hasEntities, hasServices, hasRepository, hasSources, needsConfigurationService;
+    final bool hasUi,
+        hasRoutes,
+        hasEntities,
+        hasServices,
+        hasRepository,
+        hasSources,
+        needsConfigurationService,
+        hasModuleApi,
+        hasModuleOutput,
+        isDependentModule;
     final String? configurationModelName;
     if (generateDefaultStructure) {
       hasUi = true;
@@ -23,6 +32,8 @@ Future run(HookContext context) async {
       hasSources = true;
       needsConfigurationService = true;
       configurationModelName = "${context.vars['name'].toString().pascalCase}Configuration";
+      hasModuleApi = true;
+      isDependentModule = true;
     } else {
       hasUi = context.logger.confirm(
         'Does your module have UI?',
@@ -64,7 +75,17 @@ Future run(HookContext context) async {
       } else {
         configurationModelName = null;
       }
+      isDependentModule = needsConfigurationService ||
+          context.logger.confirm(
+            'Make a dependent module?',
+            defaultValue: true,
+          );
+      hasModuleApi = context.logger.confirm(
+        'Does your module expose a module API?',
+        defaultValue: true,
+      );
     }
+    hasModuleOutput = hasModuleApi || hasRoutes;
 
     context.vars = {
       ...context.vars,
@@ -78,6 +99,9 @@ Future run(HookContext context) async {
         'has_sources': hasSources,
         'needs_configuration_service': needsConfigurationService,
         'configuration_model_name': configurationModelName,
+        'has_module_api': hasModuleApi,
+        'has_module_output': hasModuleOutput,
+        'is_dependent_module': isDependentModule,
       },
     };
   } on RangeError catch (_) {
