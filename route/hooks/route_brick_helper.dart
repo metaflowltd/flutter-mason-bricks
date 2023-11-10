@@ -18,57 +18,95 @@ class RouteBrickHelper {
 
   void addRouteToModule() {
     final name = context.vars['name'] as String;
+    final declareRouteInModule = context.vars['declare_route_in_module'] as bool;
     final file = moduleFile();
-    final moduleData = file.readAsLinesSync();
-    final classIndex = moduleData.indexWhere((element) => element.startsWith("class "));
-    moduleData.insert(classIndex - 1, "import 'routes/${name.snakeCase}_route.dart';");
-    final getItModuleParentIndex =
-        moduleData.indexWhere((element) => element.contains(" extends GetItModule "), classIndex + 1);
-    final isGetItModule = getItModuleParentIndex != -1;
-    if (isGetItModule) {
-      moduleData[getItModuleParentIndex] = moduleData[getItModuleParentIndex].replaceAll(
-        " extends GetItModule ",
-        " extends GoRouterModule ",
-      );
+    var fileString = file.readAsStringSync();
 
-      final importIndex = moduleData.indexOf("import 'package:prism_flutter_getit/modules/getit_module.dart';");
-      if (importIndex == -1) {
-        int insertIndex = 0;
-        final lastImportIndex = moduleData.lastIndexWhere((element) => element.startsWith("import 'package:"));
-        if (lastImportIndex != -1) {
-          insertIndex - lastImportIndex;
+
+    final replacesMap = <String, String>{};
+
+    // Appending imports
+    final importsRegexp = RegExp(r'(?<imports>[\s\S]+)\nclass');
+    final importsMatch = importsRegexp.firstMatch(fileString)!;
+    final imports = importsMatch.namedGroup('imports')!;
+    final importsBuffer = StringBuffer();
+    if (declareRouteInModule && !imports.contains("prism_flutter_go_router")) {
+      importsBuffer.write("import 'package:prism_flutter_go_router/prism_flutter_go_router.dart';\n");
+      importsBuffer.write("import 'package:prism_flutter_go_router/interfaces/module_route.dart';\n");
+      importsBuffer.write("import 'routes/${name.snakeCase}_route.dart';\n");
+    }
+    importsBuffer.write("import 'ui/screens/${name.snakeCase}/${name.snakeCase}_bloc.dart';\n");
+    replacesMap[imports] = "${imports}${importsBuffer.toString()}";
+    //
+
+    // Declaring module route
+    if (declareRouteInModule) {
+      final classSignatureRegexp = RegExp(
+          r"class(?<class>[\s\S]+)extends(?<parent>[\s\S]+?)(with(?<mixins>[\s\S]+?))?(implements(?<interfaces>[\s\S]+))(?<classBody>{[\s\S]+})");
+      final classSignatureMatch = classSignatureRegexp.firstMatch(fileString)!;
+      final parent = classSignatureMatch.namedGroup('parent')!;
+      final mixins = classSignatureMatch.namedGroup('mixins');
+
+      final isGoRouterModule = mixins?.contains('GoRouterModuleMixin') ?? false;
+      if (!isGoRouterModule) {
+        if (mixins != null) {
+          replacesMap[mixins] = ' GoRouterModuleMixin, $mixins';
+        } else {
+          replacesMap[parent] = "${parent}with GoRouterModuleMixin ";
         }
-        moduleData.insert(insertIndex, "import 'package:prism_flutter_go_router/interfaces/module_route.dart';");
-        moduleData.insert(insertIndex, "import 'package:prism_flutter_go_router/prism_flutter_go_router.dart';");
-      } else {
-        moduleData[importIndex] = "import 'package:prism_flutter_go_router/prism_flutter_go_router.dart';";
-        moduleData.insert(importIndex, "import 'package:prism_flutter_go_router/interfaces/module_route.dart';");
-      }
 
-      final firstClassLine = moduleData.indexWhere((element) => element.contains("{"), getItModuleParentIndex);
-
-      moduleData.insertAll(firstClassLine + 1, [
-        "  @override",
-        "  List<ModuleRoute> configureRoutes() {",
-        "    return [",
-        "      const ${name.pascalCase}Route(),",
-        "    ];",
-        "  }",
-        ""
-      ]);
-    } else {
-      final routesListIndex =
-          moduleData.indexWhere((element) => element.contains("List<ModuleRoute> configureRoutes() {"));
-      if (routesListIndex == -1) {
-        context.logger.alert(red.wrap('CAnnot insert route, no sign of line "List<ModuleRoute> configureRoutes() {" '));
+        replacesMap['{'] = """{
+    @override
+    List<ModuleRoute> configureRoutes() => [
+      const ${name.pascalCase}Route(),
+    ];
+    """;
       } else {
-        final listLine = moduleData.indexWhere((element) => element.contains("]"), routesListIndex);
-        moduleData.insert(listLine, "      const ${name.pascalCase}Route(),");
+        final routesRegexp = RegExp(r'configureRoutes\(\)[\s\S]+?(?<routes>\[[\s\S]+?\])');
+        final routesMatch = routesRegexp.firstMatch(fileString);
+        final routes = routesMatch?.namedGroup('routes');
+        if (routes != null) {
+          final listEndIndex = routes.indexOf("]");
+          final replaceRoutes = routes.substring(0, listEndIndex) + "\tconst ${name.pascalCase}Route(),\n\t\t]";
+
+          replacesMap[routes] = replaceRoutes;
+        } else {
+          context.logger.alert(red.wrap('Cannot insert route, no sign of "configureRoutes" method'));
+        }
       }
     }
-    moduleData.add("");
+    //
 
-    file.writeAsStringSync(moduleData.join("\n"));
+    // Declaring bloc factory
+    final blocFactoriesRegexp = RegExp(r'(?<blocFactories>blocFactories: \[)');
+    final moduleOutputRegexp = RegExp(r'(?<moduleOutput>(\s|\()ModuleOutput\()');
+    final blocFactoriesMatch = blocFactoriesRegexp.firstMatch(fileString);
+    final moduleOutputMatch = moduleOutputRegexp.firstMatch(fileString);
+    final blocFactoriesDeclaration = blocFactoriesMatch?.namedGroup('blocFactories');
+    final moduleOutputDeclaration = moduleOutputMatch?.namedGroup('moduleOutput');
+    if (blocFactoriesDeclaration != null) {
+      replacesMap[blocFactoriesDeclaration] = """$blocFactoriesDeclaration
+        BlocFactory(
+          (context, {args}) => ${name.pascalCase}Bloc(),
+        ),""";
+    } else if (moduleOutputDeclaration != null) {
+      replacesMap[moduleOutputDeclaration] = """$moduleOutputDeclaration
+      blocFactories: [
+        BlocFactory(
+          (context, {args}) => ${name.pascalCase}Bloc(),
+        ),
+      ]""";
+    } else {
+      context.logger.alert(red.wrap('Cannot insert bloc factory, no sign of module output registration'));
+    }
+    //
+
+    // Applying changes
+    for (final replaceEntry in replacesMap.entries) {
+      fileString = fileString.replaceFirst(replaceEntry.key, replaceEntry.value);
+    }
+
+    file.writeAsStringSync(fileString);
   }
 
   Future<(String, String)> retrievePaths() async {
@@ -137,17 +175,22 @@ class RouteBrickHelper {
   }
 
   String subdomainConst() {
-    final subdomainValue = context.vars['analytics_subdomain'].toString();
-    if (subdomainValue.isEmpty) {
-      return "";
-    }
-
     final file = metadataFile();
     final lines = file.readAsStringSync().split("\n");
-    final line = lines.firstWhere(
-      (line) => line.endsWith(' = "$subdomainValue";'),
-      orElse: () => "",
-    );
+    final subdomainValue = context.vars['analytics_subdomain'].toString();
+    final String line;
+    if (subdomainValue.isEmpty) {
+      line = lines.firstWhere(
+        (line) => line.contains("SubDomain"),
+        orElse: () => throw NoSubDomainNameException(),
+      );
+    } else {
+      line = lines.firstWhere(
+        (line) => line.endsWith(' = "$subdomainValue";'),
+        orElse: () => "",
+      );
+    }
+
     final parts = line.split("=");
 
     if (line.isEmpty || parts.isEmpty || parts[0].startsWith("const String") == false) {
