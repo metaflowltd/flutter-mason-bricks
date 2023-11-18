@@ -56,3 +56,5 @@ class PubspecNameException implements Exception {}
 class MetadataFileException implements Exception {}
 
 class NoDomainNameException implements Exception {}
+
+class NoSubDomainNameException implements Exception {}

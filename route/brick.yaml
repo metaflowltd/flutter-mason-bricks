@@ -29,7 +29,6 @@ vars:
   name:
     type: string
     description: Route name
-    default: New feature
     prompt: What is the name of your route?
   metadata_file_name:
     type: string
@@ -42,4 +41,9 @@ vars:
   analytics_subdomain:
     type: string
     description: Analytics subdomain
-    prompt: What is the analytics subdomain of your route? Can by empty
+    prompt: What is the analytics subdomain of your route? If empty, first sub-domain in metadata file will be picked
+  declare_route_in_module:
+    type: boolean
+    default: true
+    prompt: Declare this route in the module routes?
+    description: It is not required to declare flow routes in the module, so pass false here if you want to create a flow route.
